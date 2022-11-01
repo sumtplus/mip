@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.inzisoft</groupId>
+		<artifactId>mobileid</artifactId>
+		<version>1.0.0</version>
+	</parent>
+
+	<artifactId>mip-sdk</artifactId>
+	<version>${revision}</version>
+	<name>inzisoft-mip-sdk</name>
+	<description></description>
+	<packaging>jar</packaging>
+
+	<properties>
+		<failOnMissingWebXml>false</failOnMissingWebXml><!-- web.xml 이 없을경우 war 패키징 시 에러 발생 -->
+	</properties>
+	
+	<dependencyManagement>
+		<dependencies>
+	        <dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+	  			<artifactId>jackson-annotations</artifactId>
+	  			<version>2.9.9</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.jackson.core</groupId>
+	  			<artifactId>jackson-core</artifactId>
+	  			<version>2.9.9</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<dependencies>
+		<!-- External Libraries -->
+		<!-- <dependency>
+			<groupId>com.raonsecure.omnione</groupId>
+			<artifactId>sdk-core</artifactId>
+			<version>1.0.3.1</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>com.raonsecure.omnione</groupId>
+			<artifactId>sdk-server-core</artifactId>
+			<version>1.0.3.1</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>com.raonsecure.omnione</groupId>
+			<artifactId>sdk-verifier</artifactId>
+			<version>1.0.3.1</version>
+			<type>jar</type>
+		</dependency> -->
+		<dependency>
+			<groupId>com.raonsecure.omnione</groupId>
+			<artifactId>sdk-core</artifactId>
+			<version>1.0.3.5</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>com.raonsecure.omnione</groupId>
+			<artifactId>sdk-server-core</artifactId>
+			<version>1.0.3.5</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>com.raonsecure.omnione</groupId>
+			<artifactId>sdk-verifier</artifactId>
+			<version>1.0.3.6</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>raonsecure.license.sdk</groupId>
+			<artifactId>RSLicenseSDK_jdk16</artifactId>
+			<version>1.0.4</version>
+			<type>jar</type>
+		</dependency>
+		<dependency>
+			<groupId>com.mobileleader</groupId>
+			<artifactId>idcard-maker</artifactId>
+			<version>1.0.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>31.1-jre</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.madgag.spongycastle</groupId>
+			<artifactId>pkix</artifactId>
+			<version>1.54.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcprov-jdk15to18</artifactId>
+			<version>1.71</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.9.9</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>core</artifactId>
+			<version>3.3.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.google.zxing</groupId>
+			<artifactId>javase</artifactId>
+			<version>3.3.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<version>3.11.1</version>
+			<scope>test</scope>
+		</dependency>
+    </dependencies>
+	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<excludes>
+					<exclude>*.*</exclude>
+				</excludes>
+				<filtering>false</filtering>
+			</resource>
+		</resources>
+	</build>
+</project>

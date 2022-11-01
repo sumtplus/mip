@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>error</title>
+<link href="/css/font.css" rel="stylesheet" type="text/css" th:href="@{/css/font.css}">
+<link href="/css/reset.css" rel="stylesheet" type="text/css" th:href="@{/css/reset.css}">
+<link href="/css/style.css" rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+<link href="/css/images.css" rel="stylesheet" type="text/css" th:href="@{/css/images.css}">
+<script src="/js/jquery.min.js" type="text/javascript" th:src="@{/js/jquery.min.js}"></script>
+<script src="/js/jquery-ui.min.js" type="text/javascript" th:src="@{/js/jquery-ui.min.js}"></script>
+<script src="/js/script.js" type="text/javascript" th:src="@{/js/script.js}"></script>
+</head>
+
+<body class="login_frame">
+	<div class="wrap">
+		<div class="login_wrap">
+			<div class="top_logo_login com_top_logo">
+				<div class="top_logo icon"></div>
+				<span> 모바일 신분증 운영관리 시스템 </span>
+			</div>
+			<div class="error_content" style="margin-top: 2rem;" th:with="httpStatus=${T(org.springframework.http.HttpStatus).valueOf(#response.status)}">
+				<div th:if="${httpStatus}">
+					<div style="font-size:2rem; font-weight: bold;" th:text="${httpStatus}"></div>
+					<h2 th:text="${httpStatus.reasonPhrase}"></h2>
+					<div style="margin-top: 2rem; font-size: 0.9rem;">
+						<p th:text="${errorMessage}"></p>
+					</div>
+				</div>
+				<div th:if="!${httpStatus}">
+					<h2>죄송합니다.<br/>일시적으로 서비스를 이용하실 수 없습니다.</h2>
+					<div style="margin-top: 2rem; font-size: 0.9rem;">
+						<p>서비스 이용에 불편을 드려 죄송합니다.<br/>잠시 후 해당 서비스를 이용해주시기 바랍니다.</p>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+</body>
+</html>

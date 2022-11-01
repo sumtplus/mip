@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<!-- 사용자 등록/수정 팝업 모달 -->
+<div class="pop_common_wrap" th:fragment="userPopupModal">
+	<form name="registForm" id="registForm">
+		<input type="hidden" name="createBy" id="createBy" th:value="${#authentication.name}" />
+        <div class="pop_common">
+            <div class="pop_title">
+                <span>사용자 추가</span>
+                <span class="icon_close" th:onclick="javascript:jsClosePopup();"></span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>
+                            권한
+                        </th>
+                        <th>
+                        	직원명
+                        </th>
+                        <th>
+                            ID (사번)
+                        </th>
+                        <th>
+                            PW
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <span>
+                                <select name="authCode" id="registAuthCode" >
+                                    <option value="">
+                                        선택
+                                    </option>
+                                    <option value="A" >
+                                        관리자
+                                    </option>
+                                    <option value="U">
+                                        사용자
+                                    </option>
+                                </select>
+                            </span>
+                        </td>
+                        <td>
+                            <span>
+                               <label for="">
+                                    <input type="text" name="employeeName" id="registEmployeeName">
+                                </label>
+                            </span>
+                        </td>
+                        <td>
+                            <span>
+                               <label for="">
+                                    <input type="text" name="employeeNumber" id="registEmployeeNumber">
+                                </label>
+                            </span>
+                        </td>
+                        <td>
+                           <span>
+                               <label for="">
+                                    <input type="password" name="password" id="registPassword" placeholder="영문+특수문자+숫자, 8자리 이상">
+                                </label>
+                            </span>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+            <div class="btn_sc">
+                 <span class="btn_save" th:onclick="javascript:jsRegistUser();">
+                     확인
+                 </span>
+                 <span class="btn_close" th:onclick="javascript:jsClosePopup();">
+                     취소
+                 </span>
+             </div>
+        </div>
+	</form>
+</div>
+</html>

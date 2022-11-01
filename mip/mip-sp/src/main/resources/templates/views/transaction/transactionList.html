@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:ui="http://java.sun.com/jsf/facelets"
+	layout:decorate="~{layout/defaultLayout}">
+
+<th:block layout:fragment="script">
+<script th:inline="javascript" type="text/javascript">
+$(document).ready(function() {
+	
+	/* options = {
+			pattern: 'yyyy-mm', 
+			selectedYear: 2019,
+			startYear: 2010,
+			finalYear: 2022,
+			monthNames: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'],
+			openOnFocus: true
+		};
+	
+	$(".monthpicker").monthpicker(options); */
+	
+	
+	$(".datepicker").datepicker("setDate", "+0");
+	$(".datepicker").datepicker("option", "maxDate", "0");
+	
+	jsGetCodes();
+	jsGetListWithDefaultCondition();
+
+	$(".btn_refresh").on("click", function() {
+		$("#searchForm").each(function(i) {
+			this.reset();
+		});
+		$(".datepicker").datepicker("setDate", "+0")
+
+		jsGetListWithDefaultCondition();
+	});
+	
+	$("#searchForm").keydown(function(e) {
+		if(e.keyCode == 13) {
+			jsGetListWithDefaultCondition();
+		}
+	});
+	
+});
+
+/*
+ * 거래 상태 코드, 채널 코드 정보 저장
+ * key = code, value = description
+ */
+const codes = new Map();
+
+function jsGetCodes() {
+	jsAjaxCall("GET", "v1/api/codes/STEP", null, jsAfterGetCodes);
+	jsAjaxCall("GET", "v1/api/codes/CHANNEL", null, jsAfterGetCodes);
+}
+
+function jsAfterGetCodes(response) {
+	if (response != null && response.length > 0) {
+		response.forEach(function(result){
+			codes.set(result.code, result.description);
+		});
+	}
+}
+
+function jsGetListWithDefaultCondition() {
+	/*
+	 * 조회, 초기화 버튼을 클릭하여 조회 시, size는 초기화
+	 */
+	$("#selectSize option:eq(0)").prop("selected", true);
+	
+	jsGetList(0);
+}
+
+function jsGetList(pageNo) {
+	pageNo = pageNo || 0;
+	$("#page").val(pageNo);
+	
+	var size = $("#selectSize option:selected").val();
+	$("#size").val(size);
+	
+	var startDate = $("#startDatepicker").val();
+	var endDate = $("#endDatepicker").val();
+	$("#startDate").val(dateFormat(startDate, 1));
+	$("#endDate").val(dateFormat(endDate, 1));
+	
+	var data = $("#searchForm").serialize();
+	
+	jsAjaxCall("GET", "v1/api/transactions", data, jsAfterGetList);
+
+}
+
+function jsAfterGetList(response) {
+	/*
+	 * 페이지 이동시에는 size값이 초기화 되지 않아야 하므로
+	 * jsGetListWithDefaultCondition 함수명을 파라미터로 전달하지 않음
+	 */
+	jsPaging(response.totalPages, response.number, response.size, response.totalElements, "jsGetList", "pagingArea");
+	jsResultTable(response);
+}
+
+function jsResultTable(response){
+	var content = response.content;
+	var total = response.totalElements;
+
+	$("#totalCount").text(total);
+	
+	$("#fieldListBody").empty();
+	if (content != null && content.length > 0) {
+		content.forEach(function(result, index) {		
+			var resultTr = $("<tr></tr>");
+			resultTr.append("<td><p>"+ pageRowNumber(response.number, response.size, index, response.totalElements) +"</p></td>");
+			resultTr.append("<td><p>"+ dateFormat(result.createdAt, 2) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(result.employeeNo) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(result.employeeName) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(result.branchName) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(result.customerName) +"</p></td>");
+			resultTr.append("<td><p>"+ dateFormat(result.customerBirth, 2) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(codes.get(result.stepCode)) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(codes.get(result.channelCode)) +"</p></td>");
+			if (nullCheck(result.resultCode) != "" && result.resultCode == "0") {
+				resultTr.append("<td><p>완료</p></td>");
+			} else {
+				resultTr.append("<td><p>" + result.resultCode + "</p></td>");
+			}
+			$("#fieldListBody").append(resultTr);
+		});
+	} else {
+		$("#fieldListBody").append('<tr><td colspan="10">조회 결과가 없습니다.</td></tr>');	
+	}	
+}
+
+function jsDownloadExcel() {
+	$("#page").val("");
+	$("#size").val("");
+	
+	var startDate = $("#startDatepicker").val();
+	var endDate = $("#endDatepicker").val();
+	$("#startDate").val(dateFormat(startDate, 1));
+	$("#endDate").val(dateFormat(endDate, 1));
+	
+	var data = $("#searchForm").serialize();
+	
+	var iframe = $("#download").attr("src", "v1/api/transactions/download?" + data);
+}
+
+</script>
+</th:block>
+
+<div class="wrap" layout:fragment="content">
+	<!-- nav bar -->
+	<header th:replace="layout/fragments/header :: headerFragment('transaction')"></header>
+	<div class="common_con">
+		<div class="scroll_wrap">
+			<h2 class="top_title"> 거래 현황 조회</h2>
+
+			<form name="searchForm" id="searchForm">
+				<input type="hidden" name="page" id="page" value="0" />
+				<input type="hidden" name="size" id="size" value="10" />
+				<input type="hidden" name="startDate" id="startDate" />
+				<input type="hidden" name="endDate" id="endDate" />
+				<div class="con_search">
+					<table class="con_search_table">
+						<tr>
+							<th>QR 생성일자</th>
+							<td>
+								<span>
+									<span class="datepicker_box">
+										<input type="text" class="datepicker" id="startDatepicker" />
+										<!-- <input type="text" class="monthpicker" id="startDatepicker" /> -->
+									</span>
+									<span style="margin: 0 0.5rem">~</span>
+									<span class="datepicker_box">
+										<input type="text" class="datepicker" id="endDatepicker" />
+										<!-- <input type="text" class="monthpicker" id="endDatepicker" /> -->
+									</span>
+								</span>
+							</td>
+							<th>신분증 종류</th>
+							<td>
+								<span>
+									<select name="idType" id="idType">
+										<option value="">전체</option>
+										<option value="mdriverlic">모바일 운전면허증</option>
+									</select>
+								</span>
+							</td>
+						</tr>
+						<tr>
+							<th>현소속부점</th>
+							<td>
+								<span>
+									<input type="text" name="branchName" placeholder="현소속부점을 입력해주세요">
+								</span>
+							</td>
+							<th>직원번호</th>
+							<td>
+								<span>
+									<input type="text" name="employeeNumber" placeholder="직원번호를 입력해주세요">
+								</span>
+							</td>
+						</tr>
+						<tr>
+							<th>고객명</th>
+							<td>
+								<span>
+									<input type="text" name="customerName" placeholder="고객명을 입력해주세요">
+								</span>
+							</td>
+							<th>채널</th>
+							<td>
+								<span>
+									<select name="channelCode" id="channelCode">
+										<option value="">전체</option>           	
+										<option value="branch">대면</option>			
+										<option value="app">비대면</option>						
+									</select>
+								</span>
+							</td>
+						</tr>
+					</table>
+					<div class="search_btn">
+						<div>
+							<span class="btn_search" th:onclick="javascript:jsGetListWithDefaultCondition();"> 조회 </span>
+							<span class="btn_refresh"> 초기화 </span>
+						</div>
+					</div>
+				</div>
+			</form>
+			<div class="table_wrap">
+				<span class="con_data"> 
+					조회결과 <span class="fw_bold" name="totalCount" id="totalCount" style="color: #EA5705" ></span> 건 
+					<select class="con_right" name="selectSize" id="selectSize" th:onchange="javascript:jsGetList();">
+						<option value="10" selected >10개씩 보기</option>
+						<option value="15">15개씩 보기</option>
+						<option value="30">30개씩 보기</option>
+						<option value="50">50개씩 보기</option>
+						<option value="100">100개씩 보기</option>
+					</select>
+				</span>
+				
+				<table class="table">
+					<colgroup>
+						<col width="72px" />
+						<col width="150px" />
+						<col width="170px" />
+						<col width="160px" />
+						<col width="170px" />
+						<col width="160px" />
+						<col width="150px" />
+						<col width="170px" />
+						<col width="150px" />
+						<col width="160px" />
+					</colgroup>
+					<thead>
+						<tr>
+							<th class="no_th"><p>No.</p></th>
+							<th><p>생성일자</p></th>
+							<th><p>직원번호</p></th>
+							<th><p>직원명</p></th>	
+							<th><p>현소속부점</p></th>
+							<th><p>고객명</p></th>	
+							<th><p>고객 생년월일</p></th>	
+							<th><p>거래상태</p></th>	
+							<th><p>채널</p></th>
+							<th><p>처리 상태</p></th>		
+						</tr>
+					</thead>
+					<tbody id="fieldListBody">
+					</tbody>
+				</table>
+				<div class="pager">
+					<!-- 페이징 -->
+					<ul id="pagingArea"></ul>
+					<!-- // 페이징 -->
+					<div class="right">
+						<div class="excel_btn" id="downloadBtn" th:onclick="javascript:jsDownloadExcel();">Excel</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<iframe id="download" src="" style="display: none"></iframe>
+</div>

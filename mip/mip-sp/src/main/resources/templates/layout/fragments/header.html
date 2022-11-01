@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	  xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+	  xmlns:ui="http://java.sun.com/jsf/facelets">
+	  
+<header th:fragment="headerFragment(menu)">
+	<div class="common_top">
+	    <div class="com_top_logo">
+	        <span class="icon"></span>
+	        <span>
+	            
+	        </span>
+	    </div>
+	    <ul class="com_top_menu">
+	        <li th:classappend="${menu} == 'transaction'? 'active'" sec:authorize="hasAnyRole('A', 'U')">
+	            <a href="#" th:href="@{/tran}">거래 현황 조회</a>
+	        </li>
+	        <li th:classappend="${menu} == 'statistics'? 'active'" sec:authorize="hasRole('A')">
+	            <a href="#" th:href="@{/stat}">통계 조회</a>
+	        </li>
+	        <li th:classappend="${menu} == 'user'? 'active'" sec:authorize="hasRole('A')">
+	            <a href="#" th:href="@{/user}">사용자 관리</a>
+	        </li>
+	    </ul>
+	    <form id="authInfo" th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()">
+		    <div class="com_top_gnb" sec:authorize="isAuthenticated()">
+		        <ul>
+		            <li id="employeeNumber" sec:authentication="name"></li>
+		            <li th:text="${#authentication.principal.admin.employeeName}">관리자</li>
+		            <li id="authCode" th:text="${#authentication.principal.authorities[0].toString} == 'ROLE_A' ? '관리자' : '사용자'"></li>
+		        </ul>
+		        <span class="logout_btn" th:onclick="authInfo.submit()" >
+		            Logout
+		        </span>
+		    </div>
+	    </form>
+	</div>
+	</header>

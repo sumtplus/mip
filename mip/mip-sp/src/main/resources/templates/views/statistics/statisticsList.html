@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/defaultLayout}">
+
+<th:block layout:fragment="script">
+<script th:inline="javascript" type="text/javascript">
+$(document).ready(function() {
+	
+	$(".datepicker").datepicker("setDate", "-1");
+	$(".datepicker").datepicker("option", "maxDate", "-1");
+	
+	jsGetListWithDefaultCondition();
+	jsGetDashboard();
+	
+	$(".btn_refresh").on("click", function() {
+		$("#searchForm").each(function(i) {
+			this.reset();
+		});
+		$("#searchForm .datepicker").datepicker("setDate", "-1");
+		
+		jsGetListWithDefaultCondition();
+	});
+	
+	$("#searchForm").keydown(function(e) {
+		if(e.keyCode == 13) {
+			jsGetListWithDefaultCondition();
+		}
+	});
+	
+	$(".td_arrow_b").on('click', function(){
+		/*
+		 * QR 생성, 신분증 생성, 신분증 조회 - 오름차순/내림차순 정렬
+		 * toggle 버튼 클릭 시, 해당 컬럼에 대해서만 정렬 (AND 조건 X)
+		 */
+		var clickedColumn = $(this);
+		
+		clickedColumn.toggleClass("td_arrow_b");
+		clickedColumn.toggleClass("td_arrow_t");
+	    
+	    var tagId = clickedColumn.attr('id');
+	    
+	    if (clickedColumn.attr('class') == "td_arrow_b") {
+	    	$("#sort").val(tagId + ",desc");
+	    } else {
+	    	$("#sort").val(tagId + ",asc");
+	    }
+	    
+	    // 정렬 할 컬럼이 아닌 그 외 컬럼은 class를 default로 초기화
+	    $("p[name='columnSort']").each(function() {
+	    	if($(this).attr("id") != clickedColumn.attr("id") && $(this).hasClass("td_arrow_t")) {
+	    		$(this).toggleClass("td_arrow_b");
+			    $(this).toggleClass("td_arrow_t");
+	    	}
+	    });
+	     
+	    jsGetList(0);
+	});
+	
+});
+
+function jsGetListWithDefaultCondition() {
+	/*
+	 * 조회, 초기화 버튼을 클릭하여 조회 시, sort 및 size는 초기화
+	 */
+	$("p[name='columnSort']").each(function() {
+		if($(this).hasClass("td_arrow_t")){
+			$(this).toggleClass("td_arrow_b");
+		    $(this).toggleClass("td_arrow_t");
+		}
+	});
+	$("#sort").val("");
+	
+	// size 선택 드롭박스 초기화
+	$("#selectSize option:eq(0)").prop("selected", true);
+	
+	jsGetList(0); // 목록 조회
+	jsGetTotalColumns(); // 합계 표시
+}
+
+function jsGetList(pageNo){
+	pageNo = pageNo || 0;
+	$("#page").val(pageNo);
+	
+	var size = $("#selectSize option:selected").val();
+	$("#size").val(size);
+	
+	var startDate = $("#startDatepicker").val();
+	var endDate = $("#endDatepicker").val();
+	$("#startDate").val(dateFormat(startDate, 1));
+	$("#endDate").val(dateFormat(endDate, 1));
+	
+	var data = $("#searchForm").serialize();
+	
+	jsAjaxCall("GET", "v1/api/summary", data, jsAfterGetList); // 목록 조회
+}
+
+function jsAfterGetList(response) {
+	/*
+	 * 페이지 이동시에는 sort 및 size값이 초기화 되지 않아야 하므로
+	 * jsGetListWithDefaultCondition 함수명을 파라미터로 전달하지 않음
+	 */
+	jsPaging(response.totalPages, response.number, response.size, response.totalElements, "jsGetList", "pagingArea");
+	jsResultTable(response);
+}
+
+function jsResultTable(response){
+	var content = response.content;
+	var total = response.totalElements;
+	
+	$("#totalCount").text(total);
+	
+	$("#fieldListBody").empty();
+	if (content != null && content.length > 0) {
+		
+		content.forEach(function(result, index) {
+		
+			var resultTr = $("<tr></tr>");
+			resultTr.append("<td><p>"+ pageRowNumber(response.number, response.size, index, response.totalElements) +"</p></td>");
+			resultTr.append("<td><p>"+ dateFormat(result.trxDate, 2) +"</p></td>");
+			resultTr.append("<td><p>"+ result.employeeNumber +"</p></td>");
+			resultTr.append("<td><p>"+ result.employeeName +"</p></td>");
+			resultTr.append("<td><p>"+ result.branchName +"</p></td>");
+			resultTr.append("<td><p>"+ result.txOpenCount +"</p></td>");
+			resultTr.append("<td><p>"+ result.vpVerifyCount +"</p></td>");
+			resultTr.append("<td><p>"+ result.completeCount +"</p></td>");
+			$("#fieldListBody").append(resultTr);
+			
+		});
+		
+	} else {
+		$("#fieldListBody").append("<tr><td colspan='8' style='width:100%'>조회 결과가 없습니다.</td></tr>");	
+	}
+
+}
+
+function jsGetTotalColumns() {
+	var startDate = $("#startDatepicker").val();
+	var endDate = $("#endDatepicker").val();
+	$("#startDate").val(dateFormat(startDate, 1));
+	$("#endDate").val(dateFormat(endDate, 1));
+	
+	var data = $("#searchForm").serialize();
+	
+	jsAjaxCall("GET", "v1/api/summary/count/columns", data, jsAfterGetTotalColumns);
+}
+
+function jsAfterGetTotalColumns(response) {
+	$("#totalTxOpenCount").text(setNumberComma(response.totalTxOpenCount));
+	$("#totalVpVerifyCount").text(setNumberComma(response.totalVpVerifyCount));
+	$("#totalCompleteCount").text(setNumberComma(response.totalCompleteCount));
+}
+
+function jsGetDashboard(){	
+	
+	var startDate = $("#startDashDatepicker").val();
+	var endDate = $("#endDashDatepicker").val();
+	$("#startDateDash").val(dateFormat(startDate, 1));
+	$("#endDateDash").val(dateFormat(endDate, 1));
+	
+	var data = $("#dashSearchForm").serialize();
+	
+	jsAjaxCall("GET", "v1/api/summary/count/total", data, function(response) { $("#totalCreateCount").text(setNumberComma(response)); });
+	jsAjaxCall("GET", "v1/api/summary/count/topbranch", data, jsResultDashTable);
+	
+}
+
+function jsResultDashTable(response) {
+
+	$("#dashListBody_1").empty();
+	$("#dashListBody_2").empty();
+	
+	if(response != null && response.length > 0) {
+		response.forEach(function(result, index) {
+			
+			var tableBodyId = "";
+			if (index < 5) {
+				tableBodyId = "dashListBody_1";
+			} else {
+				tableBodyId = "dashListBody_2";
+			}
+			
+			var resultTr = $("<tr></tr>");
+			resultTr.append("<td><p>"+ (index + 1) +"</p></td>");
+			resultTr.append("<td><p>"+ result.branchName +"</p></td>");
+			resultTr.append("<td><p>"+ setNumberComma(result.totalCount) +"</p></td>");
+			$("#" + tableBodyId).append(resultTr);
+		});
+		
+	} else {
+		$("#dashListBody_1").append("<tr><td colspan='3' style='width:100%'>조회 결과가 없습니다.</td></tr>");
+		$("#dashListBody_2").append("<tr><td colspan='3' style='width:100%'>조회 결과가 없습니다.</td></tr>");
+	}
+}
+
+function jsDownloadExcel() {
+	$("#page").val("");
+	$("#size").val("");
+	
+	var startDate = $("#startDatepicker").val();
+	var endDate = $("#endDatepicker").val();
+	$("#startDate").val(dateFormat(startDate, 1));
+	$("#endDate").val(dateFormat(endDate, 1));
+	
+	var data = $("#searchForm").serialize();
+	
+	var iframe = $("#download").attr("src", "v1/api/summary/download?" + data);
+}
+
+</script>
+</th:block>
+
+<div class="wrap" layout:fragment="content">
+	<!-- nav bar -->
+	<header th:replace="layout/fragments/header :: headerFragment('statistics')"></header>
+	
+	<div class="common_con">
+		<div class="scroll_wrap">
+		
+			<h2 class="top_title">
+				대시보드
+				<form name="dashSearchForm" id="dashSearchForm">
+					<input type="hidden" name="startDate" id="startDateDash" />
+					<input type="hidden" name="endDate" id="endDateDash" />
+					<div class="right">
+						<span>
+							<span class="datepicker_box">
+								<input type="text" class="datepicker" id="startDashDatepicker" th:onchange="javascript:jsGetDashboard();" />
+							</span>
+							<span style="margin: 0 0.5rem">~</span>
+							<span class="datepicker_box">
+								<input type="text" class="datepicker" id="endDashDatepicker" th:onchange="javascript:jsGetDashboard();" />
+							</span>
+						</span>
+						<p class="mini_notice">※ 아래 내용은 전일까지의 정보로 제공됩니다.</p>
+					</div>
+				</form>
+			</h2>
+			
+			<ul class="dash_wrap">
+				<li class="dash_1">
+					<div class="mini_wrap">
+						<span>전체 신분증 생성 건수</span>
+						<p id="totalCreateCount">0</p>
+					</div>
+				</li>
+				<li class="dash_2">
+					<h5 class="dash_title">신분증 생성 상위 10개 소속부점</h5>
+					<table class="dash_table" id="dash_table_1">
+						<thead>
+							<tr>
+								<th>No.</th>
+								<th>소속부점</th>
+								<th>건수</th>
+							</tr>
+						</thead>
+						<tbody id="dashListBody_1">
+						</tbody>
+					</table>
+				</li>
+				<li class="dash_3">
+					<h5 class="dash_title" style="color: white">신분증 생성 상위 10개 소속부점</h5>
+					<table class="dash_table" id="dash_table_2">
+						<thead>
+							<tr>
+								<th>No.</th>
+								<th>소속부점</th>
+								<th>건수</th>
+							</tr>
+						</thead>
+						<tbody id="dashListBody_2">
+						</tbody>
+					</table>
+				</li>
+			</ul>
+
+			<h2 class="top_title"> 통계조회</h2>
+
+			<form name="searchForm" id="searchForm">
+				<input type="hidden" name="page" id="page" value="0" />
+				<input type="hidden" name="size" id="size" />
+				<input type="hidden" name="startDate" id="startDate" />
+				<input type="hidden" name="endDate" id="endDate" />
+				<input type="hidden" name="sort" id="sort" value="" />
+				<div class="con_search">
+					<table class="con_search_table">
+						<tr>
+							<th>QR 생성일자</th>
+							<td>
+								<span>
+									<span class="datepicker_box">
+										<input type="text" class="datepicker" id="startDatepicker" />
+									</span>
+									<span style="margin: 0 0.5rem">~</span>
+									<span class="datepicker_box">
+										<input type="text" class="datepicker" id="endDatepicker" />
+									</span>
+								</span>
+							</td>
+							<th>신분증 종류</th>
+							<td>
+								<span>
+									<select name="idType" id="idType">
+										<option value="">전체</option>                           	
+										<option value="mdriverlic">모바일 운전면허증</option>
+									</select>
+								</span>
+							</td>
+						</tr>
+						<tr>
+							<th>직원번호</th>
+							<td>
+								<span>
+									<input type="text" name="employeeNumber" placeholder="직원번호를 입력해주세요">
+								</span>
+							</td>
+							<th>현소속부점</th>
+							<td>
+								<span>
+									<input type="text" name="branchName" placeholder="현소속부점을 입력해주세요">
+								</span>
+							</td>
+						</tr>
+					</table>
+					<div class="search_btn">
+						<div>
+							<span class="btn_search" th:onclick="javascript:jsGetListWithDefaultCondition();"> 조회 </span>
+							<span class="btn_refresh"> 초기화 </span>
+						</div>
+					</div>
+				</div>
+			</form>
+
+			<div class="table_wrap">
+				<span class="con_data">
+					조회결과 <span class="fw_bold" name="totalCount" id="totalCount" style="color: #EA5705"></span> 건
+					<select class="con_right" name="selectSize" id="selectSize" th:onchange="javascript:jsGetList();">
+						<option value="10" selected >10개씩 보기</option>
+						<option value="15">15개씩 보기</option>
+						<option value="30">30개씩 보기</option>
+						<option value="50">50개씩 보기</option>
+						<option value="100">100개씩 보기</option>
+					</select>
+				</span>
+				
+				<table class="table">
+					<colgroup>
+						<col width="72px" />
+						<col width="150px" />
+						<col width="170px" />
+						<col width="160px" />
+						<col width="170px" />
+						<col width="130px" />
+						<col width="130px" />
+						<col width="130px" />
+					</colgroup>
+					<thead>
+						<tr>
+							<th class="no_th"><p>No.</p></th>							
+							<th><p>생성일자</p></th>							
+							<th><p>직원번호</p></th>							
+							<th><p>직원명</p></th>							
+							<th><p>현소속부점</p></th>							
+							<th><p class="td_arrow_b" name="columnSort" id="txOpenCount">QR 생성</p></th>					
+							<th><p class="td_arrow_b" name="columnSort" id="vpVerifyCount">신분증 생성</p></th>					
+							<th><p class="td_arrow_b" name="columnSort" id="completeCount">신분증 조회</p></th>
+						</tr>
+					</thead>	
+					<tbody id="fieldListBody">
+					</tbody>
+					<tfoot id="fieldListFoot">
+						<tr id="trSummary">
+							<th colspan='5'>합계</th>
+							<td id="totalTxOpenCount" th:text="0"></td>
+							<td id="totalVpVerifyCount" th:text="0"></td>
+							<td id="totalCompleteCount" th:text="0"></td>
+						</tr>
+					</tfoot>
+				</table>
+				<div class="pager">
+					<!-- 페이징 -->
+					<ul id="pagingArea"></ul>
+					<!-- // 페이징 -->
+					<div class="right">
+						<div class="excel_btn" id="downloadBtn" th:onclick="javascript:jsDownloadExcel();">Excel</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<iframe id="download" src="" style="display: none"></iframe>
+</div>
+</html>

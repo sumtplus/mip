@@ -1,0 +1,24 @@
+# 클래스 파일을 생성할 루트 디렉터리
+build_dir=/sw/mid/was/WEB-INF/classes
+# 컴파일시 참조할 파일의 경로
+CLASSPATH=/source/mid/mip-sp/libs
+#mip_lib(.jar), mip_src_path(.java)
+
+# 소스파일의 경로(.java)
+mip_src_path=/source/mid/mip-sp/src/
+#
+#mip_class_path
+
+echo "destdir" $build_dir
+echo "srcdir" $mip_src_path
+
+CLASSPATH="."
+
+for i in $(find ${mip_lib} -name '*.jar')
+do
+	CLASSPATH=${CLASSPATH}:${i}
+done
+
+echo $CLASSPATH
+
+#javac $mip_src_path -cp $CLASSPATH encoding UTF-8 -d $mip_class_path

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jeus-web-dd xmlns="http://www.tmaxsoft.com/xml/ns/jeus" version="8.0">
+	<auto-reload>
+		<enable-reload>false</enable-reload>
+		<check-on-demand>false</check-on-demand>
+	</auto-reload>
+	<webinf-first>
+		<enabled>true</enabled>
+	</webinf-first>
+	<!-- JNDI 사용 시 주석 해제 -->
+<!--	<res-ref>-->
+<!--		<jndi-info>-->
+<!--			<ref-name>{jndiName}</ref-name>-->
+<!--			<export-name>{jndiName}</export-name>-->
+<!--		</jndi-info>-->
+<!--	</res-ref>-->
+</jeus-web-dd>

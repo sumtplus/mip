@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<footer th:fragment="footerFragment">
+	<!-- 공통으로 쓰이는 js 파일 -->
+	<script src="/js/jquery.min.js" type="text/javascript" th:src="@{/js/jquery.min.js}"></script>
+    <script src="/js/jquery-ui.min.js" type="text/javascript" th:src="@{/js/jquery-ui.min.js}"></script>
+    <!-- jhmin 20220929 monthpicker추가 -->
+    <script src="/js/jquery.mtz.monthpicker.js" type="text/javascript" th:src="@{/js/jquery.mtz.monthpicker.js}"></script>
+    <script src="/js/script.js" type="text/javascript" th:src="@{/js/script.js}"></script>
+    <script src="/js/common/com.ajax.js" type="text/javascript" th:src="@{/js/common/com.ajax.js}"></script>
+    <script src="/js/common/com.util.js" type="text/javascript" th:src="@{/js/common/com.util.js}"></script>
+    <script src="/js/common/com.page.js" type="text/javascript" th:src="@{/js/common/com.page.js}"></script>
+    
+    
+    <!-- 컨텐츠페이지의 js 파일 -->
+    <th:block layout:fragment="script"></th:block>
+</footer>

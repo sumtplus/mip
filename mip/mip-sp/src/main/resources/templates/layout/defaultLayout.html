@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+  <head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>모바일 신분증 운영관리 시스템</title>
+	<link href="/css/font.css" rel="stylesheet" type="text/css" th:href="@{/css/font.css}">
+	<link href="/css/reset.css" rel="stylesheet" type="text/css" th:href="@{/css/reset.css}">
+	<link href="/css/style.css" rel="stylesheet" type="text/css" th:href="@{/css/style.css}">
+	<link href="/css/images.css" rel="stylesheet" type="text/css" th:href="@{/css/images.css}">
+	<link href="/css/jquery-ui.min.css" rel="stylesheet" type="text/css" th:href="@{/css/jquery-ui.min.css}">
+	<link href="/css/ui.jqgrid-bootstrap-ui.css" rel="stylesheet" type="text/css" th:href="@{/css/ui.jqgrid-bootstrap-ui.css}">
+	<link href="/css/datepicker.css" rel="stylesheet" type="text/css" th:href="@{/css/datepicker.css}">
+	<link href="/css/modal.css" rel="stylesheet" type="text/css" th:href="@{/css/modal.css}">
+  </head>
+
+  <body>
+ 
+	<th:block layout:fragment="content"></th:block>
+	
+	<footer th:replace="layout/fragments/footer :: footerFragment"></footer>
+	
+  </body>
+</html>
+

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{layout/defaultLayout}">
+
+<th:block layout:fragment="script">
+<script th:inline="javascript" type="text/javascript">
+$(document).ready(function() {
+	
+	jsGetCodes();
+	jsGetListWithDefaultCondition();
+	
+	$(".btn_refresh").on("click", function() {
+		$("#searchForm").each(function() {
+			this.reset();
+		});
+		
+		jsGetListWithDefaultCondition();
+	});
+	
+	$("#searchForm").keydown(function(e) {
+		if(e.keyCode == 13) {
+			jsGetListWithDefaultCondition();
+		}
+	});
+	
+	$(".td_arrow_b").on('click', function(){
+		/* 
+		 * 생성일자, 수정일자 - 오름차순/내림차순 정렬
+		 * toggle 버튼 클릭 시, 해당 컬럼에 대해서만 정렬 (생성일자, 수정일자 AND 조건 X)
+		 */
+		 var clickedColumn = $(this);
+		 
+		clickedColumn.toggleClass("td_arrow_b");
+		clickedColumn.toggleClass("td_arrow_t");
+	    
+		var tagId = clickedColumn.attr('id');
+	    
+	    if (clickedColumn.attr('class') == "td_arrow_b") {
+	    	$("#sort").val("dateInfos." + tagId + ",desc");
+	    } else {
+	    	$("#sort").val("dateInfos." + tagId + ",asc");
+	    }
+	    
+	 	// 정렬 할 컬럼이 아닌 그 외 컬럼은 class를 default로 초기화
+	    $("p[name='columnSort']").each(function() {
+	    	if($(this).attr("id") != clickedColumn.attr("id") && $(this).hasClass("td_arrow_t")) {
+	    		$(this).toggleClass("td_arrow_b");
+			    $(this).toggleClass("td_arrow_t");
+	    	}
+	    });
+	 
+	    jsGetList(0);
+	});
+	
+})
+
+/*
+ * 유저 권한 코드 정보 저장
+ * key = code, value = description
+ */
+const codes = new Map();
+
+function jsGetCodes() {
+	jsAjaxCall("GET", "v1/api/codes/AUTH_CODE", null, jsAfterGetCodes);
+}
+
+function jsAfterGetCodes(response) {
+	if (response != null && response.length > 0) {
+		response.forEach(function(result){
+			codes.set(result.code, result.description);
+		});
+	}
+}
+
+function jsGetListWithDefaultCondition() {
+	/*
+	 * 조회, 초기화 버튼을 클릭하여 조회 시, sort는 초기화
+	 */
+	$("p[name='columnSort']").each(function() {
+		if($(this).hasClass("td_arrow_t")){
+			$(this).toggleClass("td_arrow_b");
+		    $(this).toggleClass("td_arrow_t");
+		}
+	});
+	$("#sort").val("");
+	
+	jsGetList(0);
+}
+
+function jsGetList(pageNo) {
+	pageNo = pageNo || 0;
+	
+	$("#page").val(pageNo);
+	
+	var data = $("#searchForm").serialize();
+	
+	jsAjaxCall("GET", "v1/api/admins", data, jsAfterGetList);
+}
+
+function jsAfterGetList(response) {
+	/*
+	 * 페이지 이동시에는 sort값이 초기화 되지 않아야 하므로
+	 * jsGetListWithDefaultCondition 함수명을 파라미터로 전달하지 않음
+	 */
+	jsPaging(response.totalPages, response.number, response.size, response.totalElements, "jsGetList", "pagingArea");
+	jsResultTable(response);
+	
+}
+
+function jsResultTable(response) {
+	var content = response.content;
+	
+	$("#fieldListBody").empty();
+	if (content != null && content.length > 0) {
+		content.forEach(function(result, index) {
+			
+			var resultTr = $("<tr></tr>");
+			resultTr.append("<td><p><label for=''><input type='checkbox' name='checkBox'></label></p></td>");
+			resultTr.append("<td><p>"+ pageRowNumber(response.number, response.size, index, response.totalElements) +"</p></td>");
+			resultTr.append("<td><p>"+ result.employeeName +"</p></td>");
+			resultTr.append("<td><p>"+ result.employeeNumber +"</p></td>");
+			resultTr.append("<td><p>"+ codes.get(result.authCode) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(result.createdByNm) +"</p></td>");
+			resultTr.append("<td><p>"+ dateFormat(result.createdAt, 0) +"</p></td>");
+			resultTr.append("<td><p>"+ nullCheck(result.updatedByNm) +"</p></td>");
+			resultTr.append("<td><p>"+ dateFormat(result.updatedAt, 0) +"</p></td>");
+			$("#fieldListBody").append(resultTr);
+		});
+	} else {
+		$("#fieldListBody").append('<tr><td colspan="9">조회 결과가 없습니다.</td></tr>');	
+	}	
+}
+
+function jsOpenRegistPopup(modalId) {
+	$(".modal#" + modalId).attr("style", "display:block");
+}
+
+function jsOpenModifyPopup(modalId) {
+	var query = "input[name='checkBox']:checked";
+	var selectedEls = document.querySelectorAll(query);
+	
+	if(selectedEls.length != 1){
+		alert("한 명의 사용자만 선택해 주세요.");
+	} else {
+		$(".modal#" + modalId).attr("style", "display:block");
+	}
+}
+
+function jsClosePopup() {
+	$("#registForm").each(function() {
+		this.reset();
+	});
+	
+	$(".modal").attr("style", "display:none");
+}
+
+function jsRegistUser() {
+	var isValid = jsCheckValidation("registForm");
+	
+	if (isValid) {
+		var arrayData = $("#registForm").serializeArray();
+		var data = convertToObject(arrayData);
+		
+		jsAjaxCall("POST", "v1/api/admins", JSON.stringify(data), jsAfterAjaxCall);
+	}
+}
+
+function jsCheckValidation(formId) {
+
+	var authCode = $("#" + formId + " select[name='authCode']").val();
+	var employeeName = $("#" + formId + " input[name='employeeName']").val();
+	employeeName = $.trim(employeeName); // 공백 제거
+	var employeeNumber = $("#" + formId + " input[name='employeeNumber']").val();
+	employeeNumber = $.trim(employeeNumber);
+	var password = $("#" + formId + " input[name='password']").val();
+	
+	/*
+	 * 사용자 수정 시, 비밀번호를 입력한 경우에만 비밀번호 업데이트
+	 * 비밀번호를 입력하지 않은 경우에는 업데이트 되지 않으므로 password=="" check 하지 않음
+	 */
+	if (formId == "registForm"){
+		if (authCode == "" || employeeName == "" || employeeNumber == "" || password == "") {
+			alert("입력값이 누락되었습니다.");
+			return false;	
+		} 
+		
+		var num = password.search(/[0-9]/g);
+		var eng = password.search(/[a-z]/ig);
+		var spe = password.search(/[`~!@@#$%^&*|₩₩₩'₩";:₩/?]/gi);
+		
+		if (password.length < 8 || num < 0 || eng < 0 || spe < 0) {
+			alert("비밀번호는 영문(대소문자 구분) + 특수문자 + 숫자의 8자리 이상 조합이어야 합니다.");
+			return false;
+		}
+	} else {
+		if (authCode == "" || employeeName == "" || employeeNumber == "") {
+			alert("입력값이 누락되었습니다.");
+			return false;	
+		}
+		if (password != "") {
+			var num = password.search(/[0-9]/g);
+			var eng = password.search(/[a-z]/ig);
+			var spe = password.search(/[`~!@@#$%^&*|₩₩₩'₩";:₩/?]/gi);
+			
+			if (password.length < 8 || num < 0 || eng < 0 || spe < 0) {
+				alert("비밀번호는 영문(대소문자 구분) + 특수문자 + 숫자의 8자리 이상 조합이어야 합니다.");
+				return false;
+			}
+		}
+	}
+	
+	return true;	
+}
+
+function jsSelectAllOrDeselectAll(checkBoxField) {
+	/*
+	 * 체크박스 전체선택 or 전체해제
+	 */ 
+	var checkBoxes = document.getElementsByName("checkBox");
+	
+	Array.prototype.forEach.call(checkBoxes, function(checkBox) {
+		checkBox.checked = checkBoxField.checked;
+	});
+}
+
+function jsShowUserInfo() {
+	/*
+	 * 선택된 사용자 정보를 사용자 수정 모달에 표시
+	 */
+	var checked = $("input[name='checkBox']:checked");
+	var tr = checked.parent().parent().parent().parent();
+	var employeeNumber = tr.children().eq(3).text();
+	
+	jsAjaxCall("GET", "v1/api/admins/" + employeeNumber, null, jsAfterShowUserInfo);
+
+}
+
+function jsAfterShowUserInfo(response) {
+	
+	if(response.authCode == 'A') {
+		$("#modifyOptionUser").removeAttr("selected");
+		$("#modifyOptionAdmin").attr("selected", "selected");
+	} else {
+		$("#modifyOptionAdmin").removeAttr("selected");
+		$("#modifyOptionUser").attr("selected", "selected");
+	}
+	
+	$("#modifyEmployeeName").val(response.employeeName);
+	$("#modifyEmployeeNumber").val(response.employeeNumber);
+
+}
+
+function jsModifyUser() {
+	
+	var isValid = jsCheckValidation("modifyForm");
+	
+	if (isValid) {
+		// modifyAuthCode가 A이면 사용자에서 관리자로 변경한 것 -> 관리자 수 + 1
+		// modifyAuthCode가 U이면 관리자에서 사용자로 변경한 것 -> 관리자 수 - 1
+		var deleteAdminCount = $("#modifyAuthCode").val() == "A" ? -1 : 1;
+		var remainAdminCount = jsAdminCountCheck(deleteAdminCount);
+		
+		// 남아있는 관리자 수 체크
+		if (remainAdminCount > 0) {
+			var employeeNumber = $("#modifyEmployeeNumber").val();
+			var arrayData = $("#modifyForm").serializeArray();
+			var data = convertToObject(arrayData);
+			
+			jsAjaxCall("POST", "v1/api/admins/" + employeeNumber, JSON.stringify(data), jsAfterAjaxCall);
+		} else {
+			alert("수정 이후에 최소 1명의 관리자가 존재해야 합니다.");
+		}
+	}
+}
+
+function jsDeleteUser(){
+	var checked = $("input[name='checkBox']:checked");
+
+	if (checked.length == 0){
+		alert("삭제할 사용자를 선택해 주세요.");
+	} else {
+		var deleteOk = confirm("선택한 사용자를 삭제하시겠습니까?");
+		if (deleteOk) {
+			
+			var allEmployeeNumber = [];
+			
+			checked.each(function(){
+				var tr = $(this).parent().parent().parent().parent();
+				var employeeNumber = tr.children().eq(3).text();
+				
+				allEmployeeNumber.push(employeeNumber);
+				
+			});
+			
+			// 삭제할 관리자 수
+			var deleteAdminCount = 0;
+			
+			// 삭제할 관리자 수 카운팅
+			allEmployeeNumber.forEach(function(employeeNum) {
+				jsAjaxCall("GET", "v1/api/admins/" + employeeNum, null, function(response) { response.authCode == "A" ? deleteAdminCount += 1 : deleteAdminCount += 0});
+			});
+			
+			// 남은 관리자 수 체크
+			var remainAdminCount = jsAdminCountCheck(deleteAdminCount);
+			
+			// 사용자 삭제
+			if (remainAdminCount > 0) {
+				allEmployeeNumber.forEach(function(employeeNum) {
+					jsAjaxCall("DELETE", "v1/api/admins/" + employeeNum, null, null);
+				});
+				jsAfterAjaxCall();
+			} else {
+				alert("삭제 이후에 최소 1명의 관리자가 존재해야 합니다.");
+			}	
+		}
+	}
+}
+
+function jsAdminCountCheck(deleteAdminCount) {
+	/*
+	 * 관리자 수 체크
+	 * 사용자 삭제/수정 이후 관리자 수가 1명 이상 존재해야함
+	 */
+	const authCode = "A";
+	
+	var totalAdminCount = 0;
+	
+	jsAjaxCall("GET", "v1/api/admins/count/" + authCode, null, function(response) { totalAdminCount = response } )
+	
+	return totalAdminCount - deleteAdminCount;
+	
+}
+
+function jsAfterAjaxCall(){
+	location.href = /*[[@{user}]]*/ 'user';
+}
+</script>
+</th:block>
+
+<div class="wrap" layout:fragment="content">
+	<!-- nav bar -->
+	<header th:replace="layout/fragments/header :: headerFragment('user')"></header>
+	<div class="common_con">
+		<div class="scroll_wrap">
+			<h2 class="top_title">
+				사용자 관리
+				<div type="button" class="gray_btn right" th:onclick="javascript:jsOpenRegistPopup('registModal');">사용자 추가</div>
+			</h2>
+
+			<!-- 사용자 등록 모달 start -->
+			<div class="modal" id="registModal">
+				<!-- modal content -->
+				<div th:replace="views/user/userRegistPopup :: userPopupModal"></div>
+				<!-- modal background layer -->
+				<div class="modal_layer" th:onclick="javascript:jsClosePopup();"></div>
+			</div>
+			<!-- end -->
+			<!-- 사용자 수정 모달 start -->
+			<div class="modal" id="modifyModal">
+				<!-- modal content -->
+				<div th:replace="views/user/userModifyPopup :: userPopupModal"></div>
+				<!-- modal background layer -->
+				<div class="modal_layer" th:onclick="javascript:jsClosePopup();"></div>
+			</div>
+			<!-- end -->
+
+			<form name="searchForm" id="searchForm" method="get" th:action="@{/user}">
+				<div class="con_search">
+					<input type="hidden" name="page" id="page" value="0"/>
+					<input type="hidden" name="deleted" id="deleted" value=false />
+					<input type="hidden" name="sort" id="sort" value="" />
+					<table class="con_search_table">
+						<tr>
+							<th>직원명</th>
+							<td>
+								<span> 
+									<input type="text" name="employeeName" id="searchEmployeeName" placeholder="직원명을 입력해주세요">
+								</span>
+							</td>
+							<td></td>
+						</tr>
+						<tr>
+							<th>ID (사번)</th>
+							<td>
+								<span> 
+									<input type="text" name="employeeNumber" id="searchEmployeeNumber" placeholder="ID를 입력해주세요">
+								</span>
+							</td>
+							<td></td>
+						</tr>
+					</table>
+					<div class="search_btn">
+						<div>
+							<span class="btn_search" th:onclick="javascript:jsGetListWithDefaultCondition();"> 조회 </span>
+							<span class="btn_refresh"> 초기화 </span>
+						</div>
+					</div>
+				</div>
+			</form>
+
+			<div class="table_wrap" name="resultTable" id="resultTable">
+				<table class="table">
+					<colgroup>
+						<col width="72px" />
+						<col width="72px" />
+						<col width="150px" />
+						<col width="150px" />
+						<col width="150px" />
+						<col width="150px" />
+						<col width="170px" />
+						<col width="150px" />
+						<col width="170px" />
+					</colgroup>
+					<thead>
+						<tr>
+							<th>
+								<p>
+									<label for="">
+										<input type="checkbox" name="checkBoxField" th:onclick="javascript:jsSelectAllOrDeselectAll(this);">
+									</label>
+								</p>
+							</th>
+							<th class="no_th"><p>No.</p></th>	
+							<th><p>직원명</p></th>	
+							<th><p>ID (사번)</p></th>	
+							<th><p>권한</p></th>		
+							<!-- <th><p>패스워드</p></th> -->	
+							<th><p>등록자</p></th>		
+							<th><p class="td_arrow_b" name="columnSort" id="createDateTime">생성일자</p></th>		
+							<th><p>최종수정자</p></th>
+							<th><p class="td_arrow_b" name="columnSort" id="updateDateTime">수정일자</p></th>		
+						</tr>
+					</thead>
+					<tbody id="fieldListBody">
+					</tbody>
+				</table>
+				<div class="pager">
+					<div class="btn_sc">
+						<span class="btn_save" th:onclick="javascript:jsOpenModifyPopup('modifyModal');jsShowUserInfo();"> 수정 </span>
+						<span class="btn_close" th:onclick="javascript:jsDeleteUser();"> 삭제 </span>
+					</div>
+					<!-- 페이징 -->
+					<ul id="pagingArea"></ul>
+					<!-- // 페이징 -->
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</html>
