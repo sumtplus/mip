@@ -31,4 +31,7 @@ public class ScheduleConfig {
     private int deleteOldStepTerm;
     @Value("${schedule.summary.deleteOldSummary.term}")
     private int deleteOldSummaryTerm;
+    // jhmin 0713
+    @Value("${schedule.summary.deleteVpFile.cron}")
+    private String deleteVpFileCron;
 }
